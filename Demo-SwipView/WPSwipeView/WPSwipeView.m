@@ -173,6 +173,44 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }
 }
 
+- (void)loadLastSwipeViewsIfNeeded:(BOOL)animated {
+    NSMutableSet *newViews = [NSMutableSet set];
+    UIView *nextView = [self lastSwipeView];
+    if (nextView) {
+        [self.containerView addSubview:nextView];
+        nextView.center = self.swipeViewsCenterInitial;
+        [newViews addObject:nextView];
+    } else {
+        return;
+    }
+    NSInteger needRemoveCount = self.containerView.subviews.count - self.numberOfViewsPrefetched;
+    for (int i = 0; i < needRemoveCount; i++) {
+        [self.containerView.subviews.firstObject removeFromSuperview];
+    }
+    // 回调当前显示的view
+    if ([self.delegate respondsToSelector:@selector(swipeView:didShowSwipingView:atIndex:)]) {
+        [self.delegate swipeView:self didShowSwipingView:[self topSwipeView] atIndex:self.showIndex];
+    }
+    
+    if (animated) {
+        NSTimeInterval maxDelay = 0.3;
+        NSTimeInterval delayStep = maxDelay/self.numberOfViewsPrefetched;
+        NSTimeInterval aggregatedDelay = maxDelay;
+        NSTimeInterval animationDuration = 0.25;
+        for (UIView *view in newViews) {
+            view.center = CGPointMake(view.center.x, -view.frame.size.height);
+            [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
+                view.center = self.swipeViewsCenter;
+            } completion:nil];
+            aggregatedDelay -= delayStep;
+        }
+        [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:animationDuration];
+    }
+    else {
+        [self animateSwipeViewsIfNeeded];
+    }
+}
+
 - (void)animateSwipeViewsIfNeeded {
     UIView *topSwipeView = [self topSwipeView];
     if (!topSwipeView) {
@@ -368,33 +406,11 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 }
 
 - (void)swipeInViewFromLeft:(BOOL)left {
-    UIView *topSwipeView = [self topSwipeView];
-    if (!topSwipeView) {
-        return;
-    }
-    
-    CGPoint location = CGPointMake(
-                                   topSwipeView.center.x,
-                                   topSwipeView.center.y*(1 + self.programaticSwipeRotationRelativeYOffsetFromCenter)
-                                   );
-    [self createAnchorViewForCover:topSwipeView atLocation:location shouldAttachAnchorViewToPoint:YES];
-    CGVector direction = CGVectorMake((left ? -1 : 1) * self.escapeVelocityThreshold, 0);
-    [self pushAnchorViewForCover:topSwipeView inDirection:direction andCollideInRect:self.collisionRect];
+    [self loadLastSwipeViewsIfNeeded:YES];
 }
 
 - (void)swipeInViewFromUp:(BOOL)up {
-    UIView *topSwipeView = [self topSwipeView];
-    if (!topSwipeView) {
-        return;
-    }
-    
-    CGPoint location = CGPointMake(
-                                   topSwipeView.center.x,
-                                   topSwipeView.center.y*(1 + self.programaticSwipeRotationRelativeYOffsetFromCenter)
-                                   );
-    [self createAnchorViewForCover:topSwipeView atLocation:location shouldAttachAnchorViewToPoint:YES];
-    CGVector direction = CGVectorMake(0, (up ? -1 : 1) * self.escapeVelocityThreshold);
-    [self pushAnchorViewForCover:topSwipeView inDirection:direction andCollideInRect:self.collisionRect];
+    [self loadLastSwipeViewsIfNeeded:YES];
 }
 
 #pragma mark - UIDynamicAnimationHelpers
@@ -634,9 +650,14 @@ int signum(CGFloat n) {
     UIView *lastView = nil;
     // 增加索引
     _loadIndex--;
-    // 循环展示
-    if (self.isRecycle) {
-        _loadIndex = _loadIndex%_numberOfView;
+    if (_loadIndex < 0) {
+        // 循环展示
+        if (self.isRecycle) {
+            _loadIndex = _numberOfView;
+        } else {
+            _loadIndex = 0;
+            return nil;
+        }
     }
     // 加载
     if ((_numberOfView == -1) || (_numberOfView > _loadIndex)) {
@@ -647,7 +668,9 @@ int signum(CGFloat n) {
         // 添加手势
         if (lastView) {
             // 添加滑动手势
-            [lastView addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)]];
+            if (self.isAllowPanGesture) {
+                [lastView addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)]];
+            }
             // 添加轻击手势
             [lastView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)]];
             // 加载swipingView成功

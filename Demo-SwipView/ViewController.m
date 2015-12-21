@@ -26,7 +26,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
     
-    self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor], [UIColor yellowColor], [UIColor blackColor]];
+    self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor]];
     
     [self.view addSubview:self.swipeView];
     
@@ -39,6 +39,7 @@
         swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
         swipeView.direction = WPSwipeViewDirectionNone;
+        swipeView.numberOfViewsPrefetched = 4;
         swipeView.isAllowPanGesture = NO;
         swipeView.ladderOffset = 3;
         swipeView.ladderMargin = 6;
@@ -66,7 +67,7 @@
 
 - (UIView *)swipeView:(WPSwipeView *)swipeView nextViewOfIndex:(NSInteger)index {
     WCVehicleView *view = [[WCVehicleView alloc] initWithFrame:swipeView.bounds];
-    view.backgroundColor = self.swipeDataSource[index];
+    view.textLabel.text = [NSString stringWithFormat:@"this is number:%zi", index];
     return view;
 }
 

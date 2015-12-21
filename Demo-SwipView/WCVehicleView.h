@@ -10,4 +10,6 @@
 
 @interface WCVehicleView : UIView
 
+@property (strong, nonatomic, readonly) UILabel *textLabel;
+
 @end
