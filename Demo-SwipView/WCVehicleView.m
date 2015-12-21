@@ -13,7 +13,7 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.layer.cornerRadius = frame.size.width/10;
+        self.layer.cornerRadius = 3;
     }
     return self;
 }

@@ -30,15 +30,25 @@
     
     [self.view addSubview:self.swipeView];
     
-    
     [self.swipeView reloadData];
+    
+    UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
+    swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+    [self.view addGestureRecognizer:swipLeft];
+    
+    UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
+    swipRight.direction = UISwipeGestureRecognizerDirectionRight;
+    [self.view addGestureRecognizer:swipRight];
 }
 
 - (WPSwipeView *)swipeView {
     if (_swipeView == nil) {
-        WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(10, 180, 300, 100)];
-        swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder;
+        WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(10, 180, 300, 150)];
+        swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
+        swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
         swipeView.direction = WPSwipeViewDirectionLeft;
+        swipeView.ladderOffset = 3;
+        swipeView.ladderMargin = 6;
         swipeView.isRecycle = YES;
         swipeView.dataSource = self;
         swipeView.delegate = self;
@@ -56,6 +66,15 @@
     WCVehicleView *view = [[WCVehicleView alloc] initWithFrame:swipeView.bounds];
     view.backgroundColor = self.swipeDataSource[index];
     return view;
+}
+
+#pragma mark - actions
+- (void)swipLeft:(UISwipeGestureRecognizer *)sender {
+    [self.swipeView swipeOutViewToLeft];
+}
+
+- (void)swipRight:(UISwipeGestureRecognizer *)sender {
+    [self.swipeView swipeInViewFromLeft];
 }
 
 @end

@@ -8,7 +8,7 @@
 
 #import "WPSwipeView.h"
 
-WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVector) {
+WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVector) {
     WPSwipeViewDirection direction = WPSwipeViewDirectionNone;
     if (ABS(directionVector.dx) > ABS(directionVector.dy)) {
         if (directionVector.dx > 0) {
@@ -41,12 +41,12 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
 @property (strong, nonatomic) UIView *reuseCoverContainerView;
 @property (strong, nonatomic) UIView *containerView;
 
+// 加载的view个数，默认为-1，表未无限制
+@property (assign, nonatomic) NSInteger numberOfView;
+
 @end
 
-@implementation WPSwipeView{
-    // 加载的view个数，默认为-1，表未无限制
-    NSInteger _numberOfView;
-}
+@implementation WPSwipeView
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -95,6 +95,7 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
     self.collisionRect = [self defaultCollisionRect];
     
     self.ladderOffset = 10.0f;
+    self.ladderMargin = 10.0f;
 }
 
 - (void)layoutSubviews {
@@ -209,9 +210,16 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
                     }break;
                         // 天梯效果
                     case WPSwipeViewAnimateLadder: {
-                        CGFloat scale = 1 - self.ladderOffset/self.frame.size.height*2*(i-1);
+                        CGFloat scale = 1 - self.ladderMargin/self.frame.size.height*2*(i-1);
                         CGPoint scalePoint = CGPointMake(scale, scale);
-                        CGPoint offset = CGPointMake(0, -self.ladderOffset*2*(i-1));
+                        CGPoint offset = CGPointMake(0, -(self.ladderOffset + self.ladderMargin)*2*(i-1));
+                        [self ladderView:view atScale:scalePoint atOffsetFromCenter:offset animated:YES];
+                    }break;
+                        // 天梯效果2
+                    case WPSwipeViewAnimateLadder2: {
+                        CGFloat scale = 1 - self.ladderMargin/self.frame.size.height*2*(i-1);
+                        CGPoint scalePoint = CGPointMake(scale, scale);
+                        CGPoint offset = CGPointMake((self.ladderOffset + self.ladderMargin)*2*(i-1), 0);
                         [self ladderView:view atScale:scalePoint atOffsetFromCenter:offset animated:YES];
                     }break;
                     default:
@@ -253,7 +261,7 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
                                                 translation.y / translationMagnitude * scale
                                                 );
         
-        if ((ZLDirectionVectorToSwipeViewDirection(directionVector) & self.direction) > 0 &&
+        if ((WPDirectionVectorToSwipeViewDirection(directionVector) & self.direction) > 0 &&
             (ABS(translation.x) > self.relativeDisplacementThreshold * self.bounds.size.width || // displacement
              velocityMagnitude > self.escapeVelocityThreshold) && // velocity
             (signum(translation.x) == signum(normalizedVelocity.x)) && // sign X
@@ -293,6 +301,7 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
     return index;
 }
 
+#pragma mark - swipe out
 - (void)swipeOutViewToLeft {
     [self swipeOutViewToLeft:YES];
 }
@@ -309,6 +318,24 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
     [self swipeOutViewToUp:NO];
 }
 
+#pragma mark - swipe in
+- (void)swipeInViewFromLeft {
+    [self swipeInViewFromLeft:YES];
+}
+
+- (void)swipeInViewFromRight {
+    [self swipeInViewFromLeft:NO];
+}
+
+- (void)swipeInViewFromUp {
+    [self swipeInViewFromUp:YES];
+}
+
+- (void)swipeInViewFromDown {
+    [self swipeInViewFromUp:NO];
+}
+
+#pragma mark - swipe
 - (void)swipeOutViewToLeft:(BOOL)left {
     UIView *topSwipeView = [self topSwipeView];
     if (!topSwipeView) {
@@ -325,6 +352,36 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
 }
 
 - (void)swipeOutViewToUp:(BOOL)up {
+    UIView *topSwipeView = [self topSwipeView];
+    if (!topSwipeView) {
+        return;
+    }
+    
+    CGPoint location = CGPointMake(
+                                   topSwipeView.center.x,
+                                   topSwipeView.center.y*(1 + self.programaticSwipeRotationRelativeYOffsetFromCenter)
+                                   );
+    [self createAnchorViewForCover:topSwipeView atLocation:location shouldAttachAnchorViewToPoint:YES];
+    CGVector direction = CGVectorMake(0, (up ? -1 : 1) * self.escapeVelocityThreshold);
+    [self pushAnchorViewForCover:topSwipeView inDirection:direction andCollideInRect:self.collisionRect];
+}
+
+- (void)swipeInViewFromLeft:(BOOL)left {
+    UIView *topSwipeView = [self topSwipeView];
+    if (!topSwipeView) {
+        return;
+    }
+    
+    CGPoint location = CGPointMake(
+                                   topSwipeView.center.x,
+                                   topSwipeView.center.y*(1 + self.programaticSwipeRotationRelativeYOffsetFromCenter)
+                                   );
+    [self createAnchorViewForCover:topSwipeView atLocation:location shouldAttachAnchorViewToPoint:YES];
+    CGVector direction = CGVectorMake((left ? -1 : 1) * self.escapeVelocityThreshold, 0);
+    [self pushAnchorViewForCover:topSwipeView inDirection:direction andCollideInRect:self.collisionRect];
+}
+
+- (void)swipeInViewFromUp:(BOOL)up {
     UIView *topSwipeView = [self topSwipeView];
     if (!topSwipeView) {
         return;
@@ -423,7 +480,7 @@ WPSwipeViewDirection ZLDirectionVectorToSwipeViewDirection(CGVector directionVec
 }
 
 - (void)pushAnchorViewForCover:(UIView *)swipeView inDirection:(CGVector)directionVector andCollideInRect:(CGRect)collisionRect {
-    WPSwipeViewDirection direction = ZLDirectionVectorToSwipeViewDirection(directionVector);
+    WPSwipeViewDirection direction = WPDirectionVectorToSwipeViewDirection(directionVector);
     
     if ([self.delegate respondsToSelector:@selector(swipeView:didSwipeView:inDirection:)]) {
         [self.delegate swipeView:self didSwipeView:swipeView inDirection:direction];
@@ -534,7 +591,7 @@ int signum(CGFloat n) {
 }
 
 - (CGRect)defaultCollisionRect {
-    CGSize viewSize = [UIScreen mainScreen].applicationFrame.size;
+    CGSize viewSize = [UIScreen mainScreen].bounds.size;
     CGFloat collisionSizeScale = 6;
     CGSize collisionSize = CGSizeMake(viewSize.width*collisionSizeScale, viewSize.height* collisionSizeScale);
     CGRect collisionRect = CGRectMake(-collisionSize.width/2 + viewSize.width/2, -collisionSize.height/2 + viewSize.height/2, collisionSize.width, collisionSize.height);
