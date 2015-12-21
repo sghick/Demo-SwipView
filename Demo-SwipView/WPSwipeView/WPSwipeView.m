@@ -80,6 +80,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     [self addSubview:self.reuseCoverContainerView];
     
     // Default properties
+    self.isAllowPanGesture = YES;
     self.isRotationEnabled = YES;
     self.rotationDegree = 1;
     self.rotationRelativeYOffsetFromCenter = 0.3;
@@ -613,7 +614,9 @@ int signum(CGFloat n) {
         // 添加手势
         if (nextView) {
             // 添加滑动手势
-            [nextView addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)]];
+            if (self.isAllowPanGesture) {
+                [nextView addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)]];
+            }
             // 添加轻击手势
             [nextView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)]];
             // 加载swipingView成功
@@ -625,6 +628,35 @@ int signum(CGFloat n) {
         }
     }
     return nextView;
+}
+
+- (UIView *)lastSwipeView {
+    UIView *lastView = nil;
+    // 增加索引
+    _loadIndex--;
+    // 循环展示
+    if (self.isRecycle) {
+        _loadIndex = _loadIndex%_numberOfView;
+    }
+    // 加载
+    if ((_numberOfView == -1) || (_numberOfView > _loadIndex)) {
+        // 加载swipingView
+        if ([self.dataSource respondsToSelector:@selector(swipeView:nextViewOfIndex:)]) {
+            lastView = [self.dataSource swipeView:self nextViewOfIndex:_loadIndex];
+        }
+        // 添加手势
+        if (lastView) {
+            // 添加滑动手势
+            [lastView addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)]];
+            // 添加轻击手势
+            [lastView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)]];
+            // 加载swipingView成功
+            if ([self.delegate respondsToSelector:@selector(swipeView:didLoadSwipingView:atIndex:)]) {
+                [self.delegate swipeView:self didLoadSwipingView:lastView atIndex:_loadIndex];
+            }
+        }
+    }
+    return lastView;
 }
 
 - (UIView *)topSwipeView {

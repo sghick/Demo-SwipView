@@ -64,6 +64,8 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 
 @property (assign, nonatomic) id<WPSwipeViewDelegate> delegate;
 
+// 允许view跟随手势，默认YES
+@property (assign, nonatomic) BOOL isAllowPanGesture;
 // 是否允许后面的view旋转，默认YES
 @property (assign, nonatomic) BOOL isRotationEnabled;
 // 后面的view旋转的角度大小
