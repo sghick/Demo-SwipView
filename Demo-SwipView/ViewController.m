@@ -28,30 +28,39 @@
     
     self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor], [UIColor blueColor], [UIColor cyanColor]];
     
+    
+    UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
+    swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+    [self.view addGestureRecognizer:swipLeft];
+    
+    UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
+    swipRight.direction = UISwipeGestureRecognizerDirectionRight;
+    [self.view addGestureRecognizer:swipRight];
+    
     [self.view addSubview:self.swipeView];
 }
 
 - (WPSwipeView *)swipeView {
     if (_swipeView == nil) {
         WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(10, 180, 300, 150)];
-        swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
+//        swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
-        swipeView.direction = WPSwipeViewDirectionNone;
-        swipeView.numberOfViewsPrefetched = 5;
-        swipeView.isAllowPanGesture = NO;
+//        swipeView.direction = WPSwipeViewDirectionNone;
+        swipeView.numberOfViewsPrefetched = 3;
+//        swipeView.isAllowPanGesture = NO;
         swipeView.ladderOffset = 3;
         swipeView.ladderMargin = 6;
         swipeView.isRecycle = NO;
         swipeView.dataSource = self;
         swipeView.delegate = self;
         
-        UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
-        swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
-        [swipeView addGestureRecognizer:swipLeft];
-        
-        UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
-        swipRight.direction = UISwipeGestureRecognizerDirectionRight;
-        [swipeView addGestureRecognizer:swipRight];
+//        UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
+//        swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+//        [swipeView addGestureRecognizer:swipLeft];
+//        
+//        UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
+//        swipRight.direction = UISwipeGestureRecognizerDirectionRight;
+//        [swipeView addGestureRecognizer:swipRight];
         
         _swipeView = swipeView;
     }
@@ -75,7 +84,7 @@
 }
 
 - (void)swipRight:(UISwipeGestureRecognizer *)sender {
-    [self.swipeView swipeInViewFromLeft];
+    [self.swipeView swipeInView];
 }
 
 @end

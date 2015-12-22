@@ -13,13 +13,13 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     if (ABS(directionVector.dx) > ABS(directionVector.dy)) {
         if (directionVector.dx > 0) {
             direction = WPSwipeViewDirectionRight;
-        } else {
+        } else if (directionVector.dx < 0) {
             direction = WPSwipeViewDirectionLeft;
         }
     } else {
         if (directionVector.dy > 0) {
             direction = WPSwipeViewDirectionDown;
-        } else {
+        } else if (directionVector.dy < 0){
             direction = WPSwipeViewDirectionUp;
         }
     }
@@ -47,6 +47,8 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 @property (assign, nonatomic) NSInteger loadIndex;
 // 反向加载的index
 @property (assign, nonatomic) NSInteger lastLoadIndex;
+// 最近划出的view的方向
+@property (assign, nonatomic) CGVector lastDirectionVector;
 
 @end
 
@@ -178,7 +180,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }
 }
 
-- (void)loadLastSwipeViewsIfNeeded:(BOOL)animated {
+- (void)loadLastSwipeViewsIfNeeded:(BOOL)animated inDirection:(CGVector)directionVector {
     NSMutableSet *newViews = [NSMutableSet set];
     UIView *nextView = [self lastSwipeView];
     if (nextView) {
@@ -199,10 +201,12 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         NSTimeInterval maxDelay = 0.0;
         NSTimeInterval delayStep = maxDelay/self.numberOfViewsPrefetched;
         NSTimeInterval aggregatedDelay = maxDelay;
-        NSTimeInterval animationDuration = 0.25;
+        NSTimeInterval animationDuration = 1.0;
         [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:aggregatedDelay];
         for (UIView *view in newViews) {
-            view.center = CGPointMake(view.center.x, -view.frame.size.height);
+            CGVector realVector = [self realVectorFromDirectionVector:directionVector viewSize:view.bounds.size];
+            animationDuration = [self animationDurationFromRealDirectionVector:realVector];
+            view.center = [self animateCenterFromRealDirectionVector:realVector];
             [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
                 view.center = self.swipeViewsCenter;
             } completion:nil];
@@ -212,6 +216,26 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     else {
         [self animateSwipeViewsIfNeeded];
     }
+}
+
+- (CGVector)realVectorFromDirectionVector:(CGVector)directionVector viewSize:(CGSize)viewSize {
+    CGSize screenSize = [UIScreen mainScreen].bounds.size;
+    CGVector baseVector = CGVectorMake(directionVector.dx?(directionVector.dx/fabs(directionVector.dx)):0,
+                                       directionVector.dy?(directionVector.dy/fabs(directionVector.dy)):0);
+    CGVector realVector = CGVectorMake(baseVector.dx*(fabs(directionVector.dx) + screenSize.width/2.0 + viewSize.width/2.0),
+                                       baseVector.dy*(fabs(directionVector.dy) + screenSize.height/2.0 + viewSize.height/2.0));
+    return realVector;
+}
+
+- (CGPoint)animateCenterFromRealDirectionVector:(CGVector)realDirectionVector {
+    CGPoint rtnCenter = CGPointMake(self.swipeViewsCenter.x + realDirectionVector.dx,
+                                    self.swipeViewsCenter.y + realDirectionVector.dy);
+    return rtnCenter;
+}
+
+- (NSTimeInterval)animationDurationFromRealDirectionVector:(CGVector)realDirectionVector {
+    NSTimeInterval rtnDuration = sqrtf((realDirectionVector.dx*realDirectionVector.dx + realDirectionVector.dy*realDirectionVector.dy))/self.escapeVelocityThreshold;
+    return rtnDuration;
 }
 
 - (void)animateSwipeViewsIfNeeded {
@@ -354,6 +378,10 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 }
 
 #pragma mark - swipe in
+- (void)swipeInView {
+    [self swipeInViewFromLastDirection];
+}
+
 - (void)swipeInViewFromLeft {
     [self swipeInViewFromLeft:YES];
 }
@@ -401,13 +429,18 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     [self pushAnchorViewForCover:topSwipeView inDirection:direction andCollideInRect:self.collisionRect];
 }
 
+- (void)swipeInViewFromLastDirection {
+    CGVector direction = CGVectorMake(0, 0);
+    [self popAnchorViewInDirection:direction];
+}
+
 - (void)swipeInViewFromLeft:(BOOL)left {
-    CGVector direction = CGVectorMake(0, (left ? -1 : 1) * self.escapeVelocityThreshold);
+    CGVector direction = CGVectorMake((left ? -1 : 1), 0);
     [self popAnchorViewInDirection:direction];
 }
 
 - (void)swipeInViewFromUp:(BOOL)up {
-    CGVector direction = CGVectorMake(0, (up ? -1 : 1) * self.escapeVelocityThreshold);
+    CGVector direction = CGVectorMake(0, (up ? -1 : 1));
     [self popAnchorViewInDirection:direction];
 }
 
@@ -496,7 +529,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 
 - (void)pushAnchorViewForCover:(UIView *)swipeView inDirection:(CGVector)directionVector andCollideInRect:(CGRect)collisionRect {
     WPSwipeViewDirection direction = WPDirectionVectorToSwipeViewDirection(directionVector);
-    
+    _lastDirectionVector = directionVector;
     if ([self.delegate respondsToSelector:@selector(swipeView:didSwipeView:inDirection:)]) {
         [self.delegate swipeView:self didSwipeView:swipeView inDirection:direction];
     }
@@ -516,14 +549,22 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     
     self.anchorView = nil;
     [self loadNextSwipeViewsIfNeeded:NO];
+    // 同步索引
     _lastLoadIndex = _loadIndex - self.containerView.subviews.count - 1;
-    NSLog(@"del %zi:%zi", self.lastReloadIndex, self.reloadIndex);
 }
 
 - (void)popAnchorViewInDirection:(CGVector)directionVector {
-    [self loadLastSwipeViewsIfNeeded:YES];
+    // 如果directionVector没有方向，刚取上一次方向
+    WPSwipeViewDirection lastDirection = WPDirectionVectorToSwipeViewDirection(directionVector);
+    CGVector lastDirectionVector = directionVector;
+    if (lastDirection == WPSwipeViewDirectionNone) {
+        lastDirectionVector = _lastDirectionVector;
+        lastDirection = WPDirectionVectorToSwipeViewDirection(_lastDirectionVector);
+    }
+    
+    [self loadLastSwipeViewsIfNeeded:YES inDirection:lastDirectionVector];
+    // 同步索引
     _loadIndex = _lastLoadIndex + self.containerView.subviews.count + 1;
-    NSLog(@"add %zi:%zi", self.lastReloadIndex, self.reloadIndex);
 }
 
 #pragma mark - UICollisionBehaviorDelegate

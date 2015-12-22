@@ -80,9 +80,9 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 @property (assign, nonatomic) CGFloat relativeDisplacementThreshold;
 // 划出的相对速度
 @property (assign, nonatomic) CGFloat pushVelocityMagnitude;
-//
+// 初始时加载view的位置
 @property (assign, nonatomic) CGPoint swipeViewsCenter;
-//
+// 显示时加载view的位置
 @property (assign, nonatomic) CGPoint swipeViewsCenterInitial;
 // 滑动的view到这个rect中会被销毁
 @property (assign, nonatomic) CGRect collisionRect;
@@ -120,6 +120,8 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 // 向下划出
 - (void)swipeOutViewToDown;
 
+// 从上次划出方向划入
+- (void)swipeInView;
 // 从左划入
 - (void)swipeInViewFromLeft;
 // 从右划入
