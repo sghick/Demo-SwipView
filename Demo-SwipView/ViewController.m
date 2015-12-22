@@ -26,11 +26,9 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
     
-    self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor]];
+    self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor], [UIColor blueColor], [UIColor cyanColor]];
     
     [self.view addSubview:self.swipeView];
-    
-    [self.swipeView reloadData];
 }
 
 - (WPSwipeView *)swipeView {
@@ -39,11 +37,11 @@
         swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
         swipeView.direction = WPSwipeViewDirectionNone;
-        swipeView.numberOfViewsPrefetched = 4;
+        swipeView.numberOfViewsPrefetched = 5;
         swipeView.isAllowPanGesture = NO;
         swipeView.ladderOffset = 3;
         swipeView.ladderMargin = 6;
-        swipeView.isRecycle = YES;
+        swipeView.isRecycle = NO;
         swipeView.dataSource = self;
         swipeView.delegate = self;
         

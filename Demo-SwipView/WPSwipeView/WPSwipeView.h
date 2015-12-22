@@ -93,7 +93,9 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 // 一屏最多展示view个数 默认4个
 @property (assign, nonatomic) NSInteger numberOfViewsPrefetched;
 // 加载的index
-@property (assign, nonatomic, readonly) NSInteger loadIndex;
+@property (assign, nonatomic, readonly) NSInteger reloadIndex;
+// 反向加载的index
+@property (assign, nonatomic, readonly) NSInteger lastReloadIndex;
 // 显示的index
 @property (assign, nonatomic, readonly) NSInteger showIndex;
 // 是否循环展示

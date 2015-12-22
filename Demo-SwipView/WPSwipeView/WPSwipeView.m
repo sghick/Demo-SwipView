@@ -43,6 +43,10 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 
 // 加载的view个数，默认为-1，表未无限制
 @property (assign, nonatomic) NSInteger numberOfView;
+// 加载的index
+@property (assign, nonatomic) NSInteger loadIndex;
+// 反向加载的index
+@property (assign, nonatomic) NSInteger lastLoadIndex;
 
 @end
 
@@ -124,6 +128,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     [self discardAllSwipeViews];
     _numberOfView = -1;
     _loadIndex = 0;
+    _lastLoadIndex = -1;
     if ([self.dataSource respondsToSelector:@selector(numberOfSwipeView:)]) {
         _numberOfView = [self.dataSource numberOfSwipeView:self];
     }
@@ -180,8 +185,6 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         [self.containerView addSubview:nextView];
         nextView.center = self.swipeViewsCenterInitial;
         [newViews addObject:nextView];
-    } else {
-        return;
     }
     NSInteger needRemoveCount = self.containerView.subviews.count - self.numberOfViewsPrefetched;
     for (int i = 0; i < needRemoveCount; i++) {
@@ -193,10 +196,11 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }
     
     if (animated) {
-        NSTimeInterval maxDelay = 0.3;
+        NSTimeInterval maxDelay = 0.0;
         NSTimeInterval delayStep = maxDelay/self.numberOfViewsPrefetched;
         NSTimeInterval aggregatedDelay = maxDelay;
         NSTimeInterval animationDuration = 0.25;
+        [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:aggregatedDelay];
         for (UIView *view in newViews) {
             view.center = CGPointMake(view.center.x, -view.frame.size.height);
             [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
@@ -204,7 +208,6 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
             } completion:nil];
             aggregatedDelay -= delayStep;
         }
-        [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:animationDuration];
     }
     else {
         [self animateSwipeViewsIfNeeded];
@@ -333,13 +336,6 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }
 }
 
-- (NSInteger)showIndex{
-    NSUInteger numSwipeViews = self.containerView.subviews.count;
-    numSwipeViews = (numSwipeViews<=_loadIndex) ? numSwipeViews : (numSwipeViews - _numberOfView);
-    NSInteger index =  (_loadIndex - numSwipeViews);
-    return index;
-}
-
 #pragma mark - swipe out
 - (void)swipeOutViewToLeft {
     [self swipeOutViewToLeft:YES];
@@ -406,11 +402,13 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 }
 
 - (void)swipeInViewFromLeft:(BOOL)left {
-    [self loadLastSwipeViewsIfNeeded:YES];
+    CGVector direction = CGVectorMake(0, (left ? -1 : 1) * self.escapeVelocityThreshold);
+    [self popAnchorViewInDirection:direction];
 }
 
 - (void)swipeInViewFromUp:(BOOL)up {
-    [self loadLastSwipeViewsIfNeeded:YES];
+    CGVector direction = CGVectorMake(0, (up ? -1 : 1) * self.escapeVelocityThreshold);
+    [self popAnchorViewInDirection:direction];
 }
 
 #pragma mark - UIDynamicAnimationHelpers
@@ -518,6 +516,14 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     
     self.anchorView = nil;
     [self loadNextSwipeViewsIfNeeded:NO];
+    _lastLoadIndex = _loadIndex - self.containerView.subviews.count - 1;
+    NSLog(@"del %zi:%zi", self.lastReloadIndex, self.reloadIndex);
+}
+
+- (void)popAnchorViewInDirection:(CGVector)directionVector {
+    [self loadLastSwipeViewsIfNeeded:YES];
+    _loadIndex = _lastLoadIndex + self.containerView.subviews.count + 1;
+    NSLog(@"add %zi:%zi", self.lastReloadIndex, self.reloadIndex);
 }
 
 #pragma mark - UICollisionBehaviorDelegate
@@ -589,12 +595,6 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }];
 }
 
-#pragma mark - ()
-- (void)setDataSource:(id <WPSwipeViewDataSource>)dataSource {
-    _dataSource = dataSource;
-    [self reloadData];
-}
-
 - (CGFloat)degreesToRadians:(CGFloat)degrees {
     return degrees * M_PI/180.0f;
 }
@@ -618,7 +618,7 @@ int signum(CGFloat n) {
 - (UIView *)nextSwipeView {
     UIView *nextView = nil;
     // 循环展示
-    if (self.isRecycle) {
+    if (_isRecycle) {
         _loadIndex = _loadIndex%_numberOfView;
     }
     // 加载
@@ -648,22 +648,15 @@ int signum(CGFloat n) {
 
 - (UIView *)lastSwipeView {
     UIView *lastView = nil;
-    // 增加索引
-    _loadIndex--;
-    if (_loadIndex < 0) {
-        // 循环展示
-        if (self.isRecycle) {
-            _loadIndex = _numberOfView;
-        } else {
-            _loadIndex = 0;
-            return nil;
-        }
+    // 循环展示
+    if (_isRecycle) {
+        _lastLoadIndex = (_numberOfView + _lastLoadIndex)%_numberOfView;
     }
     // 加载
-    if ((_numberOfView == -1) || (_numberOfView > _loadIndex)) {
+    if ((_numberOfView == -1) || (_lastLoadIndex >= 0)) {
         // 加载swipingView
         if ([self.dataSource respondsToSelector:@selector(swipeView:nextViewOfIndex:)]) {
-            lastView = [self.dataSource swipeView:self nextViewOfIndex:_loadIndex];
+            lastView = [self.dataSource swipeView:self nextViewOfIndex:_lastLoadIndex];
         }
         // 添加手势
         if (lastView) {
@@ -675,8 +668,10 @@ int signum(CGFloat n) {
             [lastView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)]];
             // 加载swipingView成功
             if ([self.delegate respondsToSelector:@selector(swipeView:didLoadSwipingView:atIndex:)]) {
-                [self.delegate swipeView:self didLoadSwipingView:lastView atIndex:_loadIndex];
+                [self.delegate swipeView:self didLoadSwipingView:lastView atIndex:_lastLoadIndex];
             }
+            // 增加索引
+            _lastLoadIndex--;
         }
     }
     return lastView;
@@ -684,6 +679,36 @@ int signum(CGFloat n) {
 
 - (UIView *)topSwipeView {
     return self.containerView.subviews.lastObject;
+}
+
+
+
+
+#pragma mark - getters/setters
+- (NSInteger)reloadIndex {
+    if (_isRecycle) {
+        _loadIndex = _loadIndex%_numberOfView;
+    }
+    return _loadIndex;
+}
+
+- (NSInteger)lastReloadIndex {
+    if (_isRecycle) {
+        _lastLoadIndex = (_numberOfView + _lastLoadIndex)%_numberOfView;
+    }
+    return _lastLoadIndex;
+}
+
+- (NSInteger)showIndex{
+    NSUInteger numSwipeViews = self.containerView.subviews.count;
+    numSwipeViews = (numSwipeViews<=_loadIndex) ? numSwipeViews : (numSwipeViews - _numberOfView);
+    NSInteger index =  (_loadIndex - numSwipeViews);
+    return index;
+}
+
+- (void)setDataSource:(id <WPSwipeViewDataSource>)dataSource {
+    _dataSource = dataSource;
+    [self reloadData];
 }
 
 @end
