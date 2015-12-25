@@ -88,6 +88,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     // Default properties
     self.isAllowPanGesture = YES;
     self.isRotationEnabled = YES;
+    self.isAllowOffsetInPan = YES;
     self.rotationDegree = 1;
     self.rotationRelativeYOffsetFromCenter = 0.3;
     self.translucenceState = WPTranslucenceStateSame;
@@ -378,23 +379,78 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     return rtns;
 }
 
+- (CGPoint)realLocationFromLocation:(CGPoint)location direction:(WPSwipeViewDirection)direction {
+    CGPoint realLocation = location;
+    switch (direction) {
+        case WPSwipeViewDirectionHorizontal: {
+            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
+        }
+            break;
+        case WPSwipeViewDirectionVertical: {
+            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
+        }
+            break;
+        case WPSwipeViewDirectionLeft: {
+            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
+        }
+            break;
+        case WPSwipeViewDirectionRight: {
+            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
+        }
+            break;
+        case WPSwipeViewDirectionUp: {
+            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
+        }
+            break;
+        case WPSwipeViewDirectionDown: {
+            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
+        }
+            break;
+            
+        default:
+            break;
+    }
+    return realLocation;
+}
+
+- (CGVector)realDirectionVectorFromDirectionVector:(CGVector)directionVector direction:(WPSwipeViewDirection)direction {
+    CGVector realVector = directionVector;
+    switch (direction) {
+        case WPSwipeViewDirectionHorizontal: {
+            realVector = CGVectorMake(directionVector.dx, 0);
+        }
+            break;
+        case WPSwipeViewDirectionVertical: {
+            realVector = CGVectorMake(0, directionVector.dy);
+        }
+            break;
+        default:
+            break;
+    }
+    return realVector;
+}
+
 #pragma mark - Action
 - (void)handlePan:(UIPanGestureRecognizer *)recognizer {
     CGPoint translation = [recognizer translationInView:self];
     CGPoint location = [recognizer locationInView:self];
+    CGPoint realLocation = location;
     UIView *swipeView = recognizer.view;
+    if (_isAllowOffsetInPan == NO) {
+        realLocation = [self realLocationFromLocation:location direction:_direction];
+    }
     
     if (recognizer.state == UIGestureRecognizerStateBegan) {
-        [self createAnchorViewForCover:swipeView atLocation:location shouldAttachAnchorViewToPoint:YES];
+        [self createAnchorViewForCover:swipeView atLocation:realLocation shouldAttachAnchorViewToPoint:YES];
         if ([self.delegate respondsToSelector:@selector(swipeView:didStartSwipingView:atLocation:)]) {
-            [self.delegate swipeView:self didStartSwipingView:swipeView atLocation:location];
+            [self.delegate swipeView:self didStartSwipingView:swipeView atLocation:realLocation];
         }
     }
     
     if (recognizer.state == UIGestureRecognizerStateChanged) {
-        self.anchorViewAttachmentBehavior.anchorPoint = location;
+        self.anchorViewAttachmentBehavior.anchorPoint = realLocation;
         if ([self.delegate respondsToSelector:@selector(swipeView:swipingView:atLocation:translation:)]) {
-            [self.delegate swipeView:self swipingView:swipeView atLocation:location translation:translation];
+            [self.delegate swipeView:self swipingView:swipeView atLocation:realLocation translation:translation];
         }
     }
     
@@ -415,14 +471,17 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
             (signum(translation.x) == signum(normalizedVelocity.x)) && // sign X
             (signum(translation.y) == signum(normalizedVelocity.y)) // sign Y
             ) {
-            [self pushAnchorViewForCover:swipeView inDirection:directionVector andCollideInRect:self.collisionRect];
+            CGVector realDirectionVector = directionVector;
+            if (_isAllowOffsetInPan == NO) {
+                realDirectionVector = [self realDirectionVectorFromDirectionVector:directionVector direction:_direction];
+            }
+            [self pushAnchorViewForCover:swipeView inDirection:realDirectionVector andCollideInRect:self.collisionRect];
         } else {
             [self.animator removeBehavior:self.swipeViewAttachmentBehavior];
             [self.animator removeBehavior:self.anchorViewAttachmentBehavior];
             
             [self.anchorView removeFromSuperview];
-            self.swipeViewSnapBehavior = [self snapBehaviorThatSnapView:swipeView
-                                                                    toPoint:self.swipeViewsCenter];
+            self.swipeViewSnapBehavior = [self snapBehaviorThatSnapView:swipeView toPoint:self.swipeViewsCenter];
             [self.animator addBehavior:self.swipeViewSnapBehavior];
             
             if ([self.delegate respondsToSelector:@selector(swipeView:didCancelSwipe:)]) {
@@ -431,7 +490,7 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         }
         
         if ([self.delegate respondsToSelector:@selector(swipeView:didEndSwipingView:atLocation:)]) {
-            [self.delegate swipeView:self didEndSwipingView:swipeView atLocation:location];
+            [self.delegate swipeView:self didEndSwipingView:swipeView atLocation:realLocation];
         }
     }
 }

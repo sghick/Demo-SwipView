@@ -83,12 +83,10 @@ typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval dela
 @property (assign, nonatomic) BOOL isAllowPanGesture;
 // 是否允许后面的view旋转，默认YES
 @property (assign, nonatomic) BOOL isRotationEnabled;
-// 后面的view旋转的角度大小
-@property (assign, nonatomic) float rotationDegree;
-// 旋转的偏移量 默认0.3f
-@property (assign, nonatomic) float rotationRelativeYOffsetFromCenter;
 // view划出的方向，默认支持所有方向
 @property (assign, nonatomic) WPSwipeViewDirection direction;
+// 是否允许view跟着手势滑动，默认YES  仅支持4个基本方向，并且是单一的方向
+@property (assign, nonatomic) BOOL isAllowOffsetInPan;
 // 每秒偏移的量
 @property (assign, nonatomic) CGFloat escapeVelocityThreshold;
 // 相对距离
@@ -103,8 +101,6 @@ typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval dela
 @property (assign, nonatomic) CGRect collisionRect;
 // 划出的view的y轴偏移量
 @property (assign, nonatomic) CGFloat programaticSwipeRotationRelativeYOffsetFromCenter;
-// 动画展示效果
-@property (assign, nonatomic) WPSwipeViewAnimate swipeViewAnimate;
 // 一屏最多展示view个数 默认4个
 @property (assign, nonatomic) NSInteger numberOfViewsPrefetched;
 // 加载的index
@@ -115,6 +111,17 @@ typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval dela
 @property (assign, nonatomic, readonly) NSInteger showIndex;
 // 是否循环展示
 @property (assign, nonatomic) BOOL isRecycle;
+
+// 动画展示效果
+@property (assign, nonatomic) WPSwipeViewAnimate swipeViewAnimate;
+
+/** 动画展示效果 WPSwipeViewAnimatePoker */
+// 副view旋转的角度大小
+@property (assign, nonatomic) float rotationDegree;
+// 副view旋转的偏移量 默认0.3f
+@property (assign, nonatomic) float rotationRelativeYOffsetFromCenter;
+
+/** 动画展示效果 WPSwipeViewAnimateLadder/WPSwipeViewAnimateLadder2 */
 // 偏移量（天梯效果，默认10）
 @property (assign, nonatomic) CGFloat ladderOffset;
 // 偏移边距（天梯效果，默认10）
@@ -126,7 +133,9 @@ typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval dela
 // 副view的透明度范围，默认(0, 1)
 @property (assign, nonatomic) CGPoint translucenceAlphaRange;
 
+// 划入动画
 - (void)setSwipeInAnimationBlock:(SwipeAnimationBlock)swipeInAnimationBlock;
+// 划出动画
 - (void)setSwipeOutAnimationBlock:(SwipeAnimationBlock)swipeOutAnimationBlock;
 
 // 重新加载view

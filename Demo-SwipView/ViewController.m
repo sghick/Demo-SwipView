@@ -58,19 +58,20 @@
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
         swipeView.direction = WPSwipeViewDirectionLeft;
         swipeView.numberOfViewsPrefetched = 5;
+        swipeView.isAllowOffsetInPan = NO;
         swipeView.ladderOffset = 3;
         swipeView.ladderMargin = 6;
         swipeView.isRecycle = YES;
         swipeView.delegate = self;
         swipeView.dataSource = self;
         
-        UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
-        swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
-        [swipeView addGestureRecognizer:swipLeft];
-        
-        UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
-        swipRight.direction = UISwipeGestureRecognizerDirectionRight;
-        [swipeView addGestureRecognizer:swipRight];
+//        UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
+//        swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+//        [swipeView addGestureRecognizer:swipLeft];
+//        
+//        UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
+//        swipRight.direction = UISwipeGestureRecognizerDirectionRight;
+//        [swipeView addGestureRecognizer:swipRight];
         
         _swipeView = swipeView;
     }
@@ -86,6 +87,10 @@
     WCVehicleView *view = [[WCVehicleView alloc] initWithFrame:swipeView.bounds];
     view.textLabel.text = [NSString stringWithFormat:@"this is number:%zi", index];
     return view;
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView swipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation {
+//    NSLog(@"%@, %@", NSStringFromCGPoint(location), NSStringFromCGPoint(translation));
 }
 
 #pragma mark - actions
