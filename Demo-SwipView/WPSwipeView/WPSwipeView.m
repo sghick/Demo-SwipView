@@ -218,10 +218,17 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     }
 }
 
-- (CGVector)realVectorFromDirectionVector:(CGVector)directionVector viewSize:(CGSize)viewSize {
-    CGSize screenSize = [UIScreen mainScreen].bounds.size;
+// 只有方向
+- (CGVector)baseVectorFromDirectionVector:(CGVector)directionVector {
     CGVector baseVector = CGVectorMake(directionVector.dx?(directionVector.dx/fabs(directionVector.dx)):0,
                                        directionVector.dy?(directionVector.dy/fabs(directionVector.dy)):0);
+    return baseVector;
+}
+
+// 方向+距离
+- (CGVector)realVectorFromDirectionVector:(CGVector)directionVector viewSize:(CGSize)viewSize {
+    CGSize screenSize = [UIScreen mainScreen].bounds.size;
+    CGVector baseVector = [self baseVectorFromDirectionVector:directionVector];
     CGVector realVector = CGVectorMake(baseVector.dx*(fabs(directionVector.dx) + screenSize.width/2.0 + viewSize.width/2.0),
                                        baseVector.dy*(fabs(directionVector.dy) + screenSize.height/2.0 + viewSize.height/2.0));
     return realVector;
@@ -556,10 +563,9 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 - (void)popAnchorViewInDirection:(CGVector)directionVector {
     // 如果directionVector没有方向，刚取上一次方向
     WPSwipeViewDirection lastDirection = WPDirectionVectorToSwipeViewDirection(directionVector);
-    CGVector lastDirectionVector = directionVector;
+    CGVector lastDirectionVector = [self baseVectorFromDirectionVector:directionVector];
     if (lastDirection == WPSwipeViewDirectionNone) {
-        lastDirectionVector = _lastDirectionVector;
-        lastDirection = WPDirectionVectorToSwipeViewDirection(_lastDirectionVector);
+        lastDirectionVector = [self baseVectorFromDirectionVector:_lastDirectionVector];
     }
     
     [self loadLastSwipeViewsIfNeeded:YES inDirection:lastDirectionVector];
