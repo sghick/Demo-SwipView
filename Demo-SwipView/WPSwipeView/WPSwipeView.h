@@ -25,6 +25,16 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
     WPSwipeViewDirectionAll = WPSwipeViewDirectionLeft|WPSwipeViewDirectionRight|WPSwipeViewDirectionUp|WPSwipeViewDirectionDown,
 };
 
+typedef NS_ENUM(NSInteger, WPTranslucenceState) {
+    WPTranslucenceStateAscending = -1L,
+    WPTranslucenceStateSame,
+    WPTranslucenceStateDescending
+};
+
+typedef void(^AnimationsBlock)(void);
+typedef void(^CompletionBlock)(BOOL completion);
+typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval delay, AnimationsBlock animations, CompletionBlock completion);
+
 @class WPSwipeView;
 
 /// Delegate
@@ -63,6 +73,11 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 @property (assign, nonatomic) id<WPSwipeViewDataSource> dataSource;
 
 @property (assign, nonatomic) id<WPSwipeViewDelegate> delegate;
+
+// 划出动画
+@property (copy, nonatomic) SwipeAnimationBlock swipeOutAnimationBlock;
+// 划入动画
+@property (copy, nonatomic) SwipeAnimationBlock swipeInAnimationBlock;
 
 // 允许view跟随手势，默认YES
 @property (assign, nonatomic) BOOL isAllowPanGesture;
@@ -104,6 +119,15 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 @property (assign, nonatomic) CGFloat ladderOffset;
 // 偏移边距（天梯效果，默认10）
 @property (assign, nonatomic) CGFloat ladderMargin;
+// 副view的透明度递减/递增/不变
+@property (assign, nonatomic) WPTranslucenceState translucenceState;
+// 副view的透明度递减/递增的单位，默认0.1
+@property (assign, nonatomic) CGFloat translucenceUnit;
+// 副view的透明度范围，默认(0, 1)
+@property (assign, nonatomic) CGPoint translucenceAlphaRange;
+
+- (void)setSwipeInAnimationBlock:(SwipeAnimationBlock)swipeInAnimationBlock;
+- (void)setSwipeOutAnimationBlock:(SwipeAnimationBlock)swipeOutAnimationBlock;
 
 // 重新加载view
 - (void)reloadData;
@@ -130,6 +154,5 @@ typedef NS_ENUM(NSUInteger, WPSwipeViewDirection) {
 - (void)swipeInViewFromUp;
 // 从下划入
 - (void)swipeInViewFromDown;
-
 
 @end

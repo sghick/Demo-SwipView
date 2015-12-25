@@ -90,6 +90,9 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     self.isRotationEnabled = YES;
     self.rotationDegree = 1;
     self.rotationRelativeYOffsetFromCenter = 0.3;
+    self.translucenceState = WPTranslucenceStateSame;
+    self.translucenceUnit = 0.1;
+    self.translucenceAlphaRange = CGPointMake(0, 1);
     
     self.direction = WPSwipeViewDirectionAll;
     self.pushVelocityMagnitude = 1000;
@@ -166,11 +169,19 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         NSTimeInterval delayStep = maxDelay/self.numberOfViewsPrefetched;
         NSTimeInterval aggregatedDelay = maxDelay;
         NSTimeInterval animationDuration = 0.25;
-        for (UIView *view in newViews) {
+        for (__weak UIView *view in newViews) {
             view.center = CGPointMake(view.center.x, -view.frame.size.height);
-            [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
-                view.center = self.swipeViewsCenter;
-            } completion:nil];
+            if (_swipeOutAnimationBlock) {
+                _swipeOutAnimationBlock(animationDuration, aggregatedDelay, ^{
+                    view.center = self.swipeViewsCenter;
+                }, ^(BOOL finished) {
+                });
+            } else {
+                [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
+                    view.center = self.swipeViewsCenter;
+                } completion:^(BOOL finished) {
+                }];
+            }
             aggregatedDelay -= delayStep;
         }
         [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:animationDuration];
@@ -203,13 +214,21 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         NSTimeInterval aggregatedDelay = maxDelay;
         NSTimeInterval animationDuration = 1.0;
         [self performSelector:@selector(animateSwipeViewsIfNeeded) withObject:nil afterDelay:aggregatedDelay];
-        for (UIView *view in newViews) {
+        for (__weak UIView *view in newViews) {
             CGVector realVector = [self realVectorFromDirectionVector:directionVector viewSize:view.bounds.size];
             animationDuration = [self animationDurationFromRealDirectionVector:realVector];
             view.center = [self animateCenterFromRealDirectionVector:realVector];
-            [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
-                view.center = self.swipeViewsCenter;
-            } completion:nil];
+            if (_swipeInAnimationBlock) {
+                _swipeInAnimationBlock(animationDuration, aggregatedDelay, ^{
+                    view.center = self.swipeViewsCenter;
+                }, ^(BOOL finished) {
+                });
+            } else {
+                [UIView animateWithDuration:animationDuration delay:aggregatedDelay options:UIViewAnimationOptionCurveEaseIn animations:^{
+                    view.center = self.swipeViewsCenter;
+                } completion:^(BOOL finished) {
+                }];
+            }
             aggregatedDelay -= delayStep;
         }
     }
@@ -262,6 +281,9 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         }
     }
     
+    
+    // 副views的透明度数组
+    NSArray *translucences = [self translucencesWithState:_translucenceState unit:_translucenceUnit range:_translucenceAlphaRange numberOfViewsPrefetched:_numberOfViewsPrefetched];
     if (self.isRotationEnabled) {
         // rotation
         NSUInteger numSwipeViews = self.containerView.subviews.count;
@@ -274,6 +296,10 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
             // 设置view偏移量
             if (numSwipeViews >= i) {
                 UIView * view = self.containerView.subviews[numSwipeViews - i];
+                // 设置透明度
+                if ((numSwipeViews - i) < translucences.count) {
+                    view.alpha = ((NSNumber *)translucences[numSwipeViews - i]).floatValue;
+                }
                 // 效果
                 switch (self.swipeViewAnimate) {
                         // 散布效果
@@ -301,6 +327,55 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
             }
         }
     }
+}
+
+// 获取透明度的数组
+- (NSArray *)translucencesWithState:(WPTranslucenceState)state unit:(CGFloat)unit range:(CGPoint)range numberOfViewsPrefetched:(NSInteger)numberOfViewsPrefetched {
+    NSMutableArray *rtns = [NSMutableArray array];
+    switch (state) {
+        case WPTranslucenceStateSame: {
+            return rtns;
+        }
+            break;
+        case WPTranslucenceStateAscending: {
+            CGFloat alpha = 0;
+            CGFloat minAlpha = range.x;
+            CGFloat maxAlpha = range.y;
+            NSNumber *alphaNumber = nil;
+            for (int i = (int)numberOfViewsPrefetched; i > 0; i--) {
+                alpha = minAlpha + unit*i;
+                if (alpha <= maxAlpha) {
+                    alphaNumber = [NSNumber numberWithFloat:alpha];
+                } else {
+                    alphaNumber = [NSNumber numberWithFloat:maxAlpha];
+                }
+                [rtns addObject:alphaNumber];
+            }
+            return rtns;
+        }
+            break;
+        case WPTranslucenceStateDescending: {
+            CGFloat alpha = 0;
+            CGFloat minAlpha = range.x;
+            CGFloat maxAlpha = range.y;
+            NSNumber *alphaNumber = nil;
+            for (int i = (int)numberOfViewsPrefetched; i > 0; i--) {
+                alpha = maxAlpha - unit*(i - 1);
+                if (alpha >= minAlpha) {
+                    alphaNumber = [NSNumber numberWithFloat:alpha];
+                } else {
+                    alphaNumber = [NSNumber numberWithFloat:minAlpha];
+                }
+                [rtns addObject:alphaNumber];
+            }
+            return rtns;
+        }
+            break;
+            
+        default:
+            break;
+    }
+    return rtns;
 }
 
 #pragma mark - Action

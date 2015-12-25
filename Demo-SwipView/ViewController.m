@@ -26,7 +26,17 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor greenColor];
     
-    self.swipeDataSource = @[[UIColor redColor], [UIColor blueColor], [UIColor cyanColor], [UIColor blueColor], [UIColor cyanColor]];
+    self.swipeDataSource = @[[UIColor redColor],
+                             [UIColor blueColor],
+                             [UIColor cyanColor],
+                             [UIColor blueColor],
+                             [UIColor blueColor],
+                             [UIColor cyanColor],
+                             [UIColor blueColor],
+                             [UIColor blueColor],
+                             [UIColor cyanColor],
+                             [UIColor blueColor],
+                             [UIColor cyanColor]];
     
     
 //    UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
@@ -44,15 +54,15 @@
     if (_swipeView == nil) {
         WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(10, 180, 300, 150)];
         swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
+        swipeView.translucenceState = WPTranslucenceStateDescending;
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
-        swipeView.direction = WPSwipeViewDirectionNone;
-        swipeView.numberOfViewsPrefetched = 3;
-        swipeView.isAllowPanGesture = NO;
+        swipeView.direction = WPSwipeViewDirectionLeft;
+        swipeView.numberOfViewsPrefetched = 5;
         swipeView.ladderOffset = 3;
         swipeView.ladderMargin = 6;
-        swipeView.isRecycle = NO;
-        swipeView.dataSource = self;
+        swipeView.isRecycle = YES;
         swipeView.delegate = self;
+        swipeView.dataSource = self;
         
         UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
         swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
