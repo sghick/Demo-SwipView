@@ -45,7 +45,7 @@
 
 - (WPSwipeView *)swipeView {
     if (_swipeView == nil) {
-        WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(10, 180, 300, 150)];
+        WPSwipeView *swipeView = [[WPSwipeView alloc] initWithFrame:CGRectMake(30, 180, 300, 150)];
         swipeView.programaticSwipeRotationRelativeYOffsetFromCenter = 0;
         swipeView.translucenceState = WPTranslucenceStateDescending;
         swipeView.swipeViewAnimate = WPSwipeViewAnimateLadder2;
@@ -78,9 +78,9 @@
     self.lastTranslation = translation;
 }
 
-//if (translation.x > 0) {
-//    [self.swipeView swipeInView];
-//}
+- (void)swipeView:(WPSwipeView *)swipeView didSelectedSwipingView:(UIView *)view atIndex:(NSInteger)index {
+    [swipeView swipeInViewFromLeft];
+}
 
 #pragma mark - actions
 
