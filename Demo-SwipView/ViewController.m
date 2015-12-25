@@ -18,6 +18,8 @@
 
 @property (strong, nonatomic) NSArray *swipeDataSource;
 
+@property (assign, nonatomic) CGPoint lastTranslation;
+
 @end
 
 @implementation ViewController
@@ -38,15 +40,6 @@
                              [UIColor blueColor],
                              [UIColor cyanColor]];
     
-    
-//    UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
-//    swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
-//    [self.view addGestureRecognizer:swipLeft];
-//    
-//    UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
-//    swipRight.direction = UISwipeGestureRecognizerDirectionRight;
-//    [self.view addGestureRecognizer:swipRight];
-    
     [self.view addSubview:self.swipeView];
 }
 
@@ -65,14 +58,6 @@
         swipeView.delegate = self;
         swipeView.dataSource = self;
         
-//        UISwipeGestureRecognizer *swipLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipLeft:)];
-//        swipLeft.direction = UISwipeGestureRecognizerDirectionLeft;
-//        [swipeView addGestureRecognizer:swipLeft];
-//        
-//        UISwipeGestureRecognizer *swipRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipRight:)];
-//        swipRight.direction = UISwipeGestureRecognizerDirectionRight;
-//        [swipeView addGestureRecognizer:swipRight];
-        
         _swipeView = swipeView;
     }
     return _swipeView;
@@ -89,17 +74,14 @@
     return view;
 }
 
-- (void)swipeView:(WPSwipeView *)swipeView swipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation {
-//    NSLog(@"%@, %@", NSStringFromCGPoint(location), NSStringFromCGPoint(translation));
+- (void)swipeView:(WPSwipeView *)swipeView didEndSwipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation {
+    self.lastTranslation = translation;
 }
+
+//if (translation.x > 0) {
+//    [self.swipeView swipeInView];
+//}
 
 #pragma mark - actions
-- (void)swipLeft:(UISwipeGestureRecognizer *)sender {
-    [self.swipeView swipeOutViewToLeft];
-}
-
-- (void)swipRight:(UISwipeGestureRecognizer *)sender {
-    [self.swipeView swipeInView];
-}
 
 @end

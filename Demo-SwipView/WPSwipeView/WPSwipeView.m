@@ -49,6 +49,8 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 @property (assign, nonatomic) NSInteger lastLoadIndex;
 // 最近划出的view的方向
 @property (assign, nonatomic) CGVector lastDirectionVector;
+// 最初移动view时location
+@property (assign, nonatomic) CGPoint beginLocation;
 
 @end
 
@@ -379,33 +381,57 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     return rtns;
 }
 
-- (CGPoint)realLocationFromLocation:(CGPoint)location direction:(WPSwipeViewDirection)direction {
+- (CGPoint)realLocationFromLocation:(CGPoint)location direction:(WPSwipeViewDirection)direction inCenter:(CGPoint)inCenter beginLocation:(CGPoint)beginLocation {
     CGPoint realLocation = location;
     switch (direction) {
+        case WPSwipeViewDirectionLeft:
+        case WPSwipeViewDirectionRight:
         case WPSwipeViewDirectionHorizontal: {
-            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
+            realLocation = CGPointMake(location.x, inCenter.y);
         }
             break;
+        case WPSwipeViewDirectionUp:
+        case WPSwipeViewDirectionDown:
         case WPSwipeViewDirectionVertical: {
-            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
+            realLocation = CGPointMake(inCenter.x, location.y);
         }
             break;
-        case WPSwipeViewDirectionLeft: {
-            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
-        }
-            break;
-        case WPSwipeViewDirectionRight: {
-            realLocation = CGPointMake(location.x, self.swipeViewsCenter.y);
-        }
-            break;
-        case WPSwipeViewDirectionUp: {
-            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
-        }
-            break;
-        case WPSwipeViewDirectionDown: {
-            realLocation = CGPointMake(self.swipeViewsCenter.x, location.y);
-        }
-            break;
+//        case WPSwipeViewDirectionLeft: {
+//            CGFloat offset_x = location.x - beginLocation.x;
+//            if (offset_x < 0) {
+//                realLocation = CGPointMake(location.x, inCenter.y);
+//            } else {
+//                realLocation = CGPointMake(inCenter.x, inCenter.y);
+//            }
+//        }
+//            break;
+//        case WPSwipeViewDirectionRight: {
+//            CGFloat offset_x = location.x - beginLocation.x;
+//            if (offset_x > 0) {
+//                realLocation = CGPointMake(location.x, inCenter.y);
+//            } else {
+//                realLocation = CGPointMake(inCenter.x, inCenter.y);
+//            }
+//        }
+//            break;
+//        case WPSwipeViewDirectionUp: {
+//            CGFloat offset_y = location.y - beginLocation.y;
+//            if (offset_y > 0) {
+//                realLocation = CGPointMake(inCenter.x, location.y);
+//            } else {
+//                realLocation = CGPointMake(inCenter.x, inCenter.y);
+//            }
+//        }
+//            break;
+//        case WPSwipeViewDirectionDown: {
+//            CGFloat offset_y = location.y - beginLocation.y;
+//            if (offset_y < 0) {
+//                realLocation = CGPointMake(inCenter.x, location.y);
+//            } else {
+//                realLocation = CGPointMake(inCenter.x, inCenter.y);
+//            }
+//        }
+//            break;
             
         default:
             break;
@@ -416,10 +442,14 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
 - (CGVector)realDirectionVectorFromDirectionVector:(CGVector)directionVector direction:(WPSwipeViewDirection)direction {
     CGVector realVector = directionVector;
     switch (direction) {
+        case WPSwipeViewDirectionLeft:
+        case WPSwipeViewDirectionRight:
         case WPSwipeViewDirectionHorizontal: {
             realVector = CGVectorMake(directionVector.dx, 0);
         }
             break;
+        case WPSwipeViewDirectionUp:
+        case WPSwipeViewDirectionDown:
         case WPSwipeViewDirectionVertical: {
             realVector = CGVectorMake(0, directionVector.dy);
         }
@@ -437,10 +467,11 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
     CGPoint realLocation = location;
     UIView *swipeView = recognizer.view;
     if (_isAllowOffsetInPan == NO) {
-        realLocation = [self realLocationFromLocation:location direction:_direction];
+        realLocation = [self realLocationFromLocation:location direction:_direction inCenter:_swipeViewsCenter beginLocation:_beginLocation];
     }
     
     if (recognizer.state == UIGestureRecognizerStateBegan) {
+        _beginLocation = location;
         [self createAnchorViewForCover:swipeView atLocation:realLocation shouldAttachAnchorViewToPoint:YES];
         if ([self.delegate respondsToSelector:@selector(swipeView:didStartSwipingView:atLocation:)]) {
             [self.delegate swipeView:self didStartSwipingView:swipeView atLocation:realLocation];
@@ -489,8 +520,8 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
             }
         }
         
-        if ([self.delegate respondsToSelector:@selector(swipeView:didEndSwipingView:atLocation:)]) {
-            [self.delegate swipeView:self didEndSwipingView:swipeView atLocation:realLocation];
+        if ([self.delegate respondsToSelector:@selector(swipeView:didEndSwipingView:atLocation:translation:)]) {
+            [self.delegate swipeView:self didEndSwipingView:swipeView atLocation:realLocation translation:translation];
         }
     }
 }

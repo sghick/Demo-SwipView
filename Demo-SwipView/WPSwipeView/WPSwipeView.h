@@ -48,7 +48,7 @@ typedef void (^SwipeAnimationBlock)(NSTimeInterval duration, NSTimeInterval dela
 
 - (void)swipeView:(WPSwipeView *)swipeView swipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation;
 
-- (void)swipeView:(WPSwipeView *)swipeView didEndSwipingView:(UIView *)view atLocation:(CGPoint)location;
+- (void)swipeView:(WPSwipeView *)swipeView didEndSwipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation;
 
 - (void)swipeView:(WPSwipeView *)swipeView didShowSwipingView:(UIView *)view atIndex:(NSInteger)index;
 
