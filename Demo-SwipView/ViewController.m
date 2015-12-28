@@ -74,11 +74,37 @@
     return view;
 }
 
+
+- (void)swipeView:(WPSwipeView *)swipeView didSwipeView:(UIView *)view inDirection:(WPSwipeViewDirection)direction {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView didCancelSwipe:(UIView *)view {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView didStartSwipingView:(UIView *)view atLocation:(CGPoint)location {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView swipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
 - (void)swipeView:(WPSwipeView *)swipeView didEndSwipingView:(UIView *)view atLocation:(CGPoint)location translation:(CGPoint)translation {
-    self.lastTranslation = translation;
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView didShowSwipingView:(UIView *)view atIndex:(NSInteger)index {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
+}
+
+- (void)swipeView:(WPSwipeView *)swipeView didLoadSwipingView:(UIView *)view atIndex:(NSInteger)index {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
 }
 
 - (void)swipeView:(WPSwipeView *)swipeView didSelectedSwipingView:(UIView *)view atIndex:(NSInteger)index {
+    NSLog(@"%@", NSStringFromSelector(_cmd));
     [swipeView swipeInViewFromLeft];
 }
 

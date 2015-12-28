@@ -284,7 +284,6 @@ WPSwipeViewDirection WPDirectionVectorToSwipeViewDirection(CGVector directionVec
         }
     }
     
-    
     // 副views的透明度数组
     NSArray *translucences = [self translucencesWithState:_translucenceState unit:_translucenceUnit range:_translucenceAlphaRange numberOfViewsPrefetched:_numberOfViewsPrefetched];
     if (self.isRotationEnabled) {
